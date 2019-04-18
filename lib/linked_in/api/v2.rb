@@ -9,13 +9,26 @@ module LinkedIn
       # Obtain profile information for a member.  Currently, the method only
       # accesses the authenticated user.
       #
-      # Permissions: r_liteprofile r_emailaddress
+      # Permissions: r_liteprofile
       #
       # @see https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin?context=linkedin/consumer/context#retrieving-member-profiles
       #
       # @return [void]
       def v2_profile
         path = '/me'
+        v2_get(path)
+      end
+
+      # Obtain email information for a member.  Currently, the method only
+      # accesses the authenticated user.
+      #
+      # Permissions: r_emailaddress
+      #
+      # @see https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin?context=linkedin/consumer/context#retrieving-member-email-address
+      #
+      # @return [void]
+      def v2_email_address
+        path = '/emailAddress?q=members&projection=(elements*(handle~))'
         v2_get(path)
       end
 

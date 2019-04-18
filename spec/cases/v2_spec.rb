@@ -52,6 +52,31 @@ describe LinkedIn::Api::V2 do
     end
   end
 
+  describe '#v2_email_address' do
+    let(:api_url) { 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))' }
+
+    context "when LinkedIn returns 201 status code" do
+      before { stub_request(:get, api_url) }
+
+      it "should send a request" do
+        client.v2_email_address
+
+        expect(a_request(:get, api_url).with(headers: headers, body: nil)
+        ).to have_been_made.once
+      end
+    end
+
+    context 'when LinkedIn returns 403 status code' do
+      before { stub_request(:get, api_url).to_return(body: '{}', status: 403) }
+
+      it 'returns 403 status code' do
+        expect do
+          client.v2_email_address
+        end.to raise_error(LinkedIn::Errors::AccessDeniedError)
+      end
+    end
+  end
+
   describe '#v2_add_share' do
     let(:urn) { '1234567890' }
     let(:comment) { 'Testing, 1, 2, 3' }
