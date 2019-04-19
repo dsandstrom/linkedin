@@ -9,14 +9,28 @@ module LinkedIn
       # Obtain profile information for a member.  Currently, the method only
       # accesses the authenticated user.
       #
-      # Permissions: r_liteprofile r_emailaddress
+      # Permissions: r_liteprofile
       #
       # @see https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin?context=linkedin/consumer/context#retrieving-member-profiles
       #
       # @return [void]
       def v2_profile
-        path = '/me'
-        v2_get(path)
+        fields = ['id', 'firstName', 'lastName', 'profilePicture(displayImage~:playableStreams)'] # Default fields
+        path = "/me?projection=(#{fields.join(',')})"
+        parse_profile_data v2_get(path)
+      end
+
+      # Obtain email information for a member.  Currently, the method only
+      # accesses the authenticated user.
+      #
+      # Permissions: r_emailaddress
+      #
+      # @see https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin?context=linkedin/consumer/context#retrieving-member-email-address
+      #
+      # @return [void]
+      def v2_email_address
+        path = '/emailAddress?q=members&projection=(elements*(handle~))'
+        JSON.parse(v2_get(path))['elements'][0]['handle~']['emailAddress']
       end
 
       # Share content for the authenticated user
@@ -85,6 +99,39 @@ module LinkedIn
             }
           }
           payload
+        end
+
+        def parse_profile_data(raw_json)
+          parsed_json = JSON.parse(raw_json)
+
+          data = {
+            'id' => parsed_json['id'],
+            'first_name' => parse_profile_localized_field(parsed_json, 'firstName'),
+            'last_name' => parse_profile_localized_field(parsed_json, 'lastName')
+          }
+
+          if !parsed_json['profilePicture'].nil? &&
+             !parsed_json['profilePicture']['displayImage~'].nil? &&
+             !parsed_json['profilePicture']['displayImage~']['elements'].nil? &&
+             !parsed_json['profilePicture']['displayImage~']['elements'].empty?
+            data['picture_url'] = parsed_json['profilePicture']['displayImage~']['elements'].last['identifiers'].first['identifier']
+          end
+
+          data
+        end
+
+        def parse_profile_localized_field(parsed_json, field_name)
+          return unless parse_profile_localized_field_available?(parsed_json, field_name)
+          parsed_json[field_name]['localized'][parse_profile_field_locale(parsed_json, field_name)]
+        end
+
+        def parse_profile_field_locale(parsed_json, field_name)
+          "#{parsed_json[field_name]['preferredLocale']['language']}_" \
+            "#{parsed_json[field_name]['preferredLocale']['country']}"
+        end
+
+        def parse_profile_localized_field_available?(parsed_json, field_name)
+          parsed_json[field_name] && parsed_json[field_name]['localized']
         end
     end
   end
