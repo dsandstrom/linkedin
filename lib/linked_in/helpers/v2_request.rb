@@ -21,11 +21,17 @@ module LinkedIn
         end
 
         def v2_post(path, body = '', options = {})
+          # unscoped_url option necessary for image updload
+          # Since Linkedin returns a complete URL for image upload on version 2 (unscoped from v2)
+          # we can't scope requests on v2 as well
+          # see: https://docs.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin?context=linkedin/consumer/context#upload-image-binary-file
+          url = options.delete(:unscoped_url) ? path : "#{API_PATH}#{path}"
+
           options = { body: body, headers: DEFAULT_HEADERS.merge(options) }
           # response is OAuth2::Response
           # response.response is Faraday::Response
           # sending back response.response makes it easier to access the env
-          response = access_token.post("#{API_PATH}#{path}", options).response
+          response = access_token.post(url, options).response
           raise_errors(response)
           response
         end
